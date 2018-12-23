@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <script src="https://davidshimjs.github.io/qrcodejs/qrcode.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js" integrity="sha256-ji09tECORKvr8xB9iCl8DJ8iNMLriDchC1+p+yt1hSs=" crossorigin="anonymous"></script>
+        <style>
+            body {
+                margin: 5%;
+            }
+            img {
+                width: 100%;
+                display: block;
+            }
+            #count {
+                text-align: center;
+                font-size: 10vh;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="qr"></div>
+        <script async>
+            const qr = new QRCode(document.getElementById("qr"), {
+                width: 1024,
+                height: 1024
+            });
+            socket = io.connect(location.origin, { transport: ['polling'], query: document.cookie.replace(/(; )/g, '&')});
+            socket.on('connect', () => {
+                console.log('Connected');
+
+                socket.on('message', (msg) => {
+                    console.log(msg);
+                    qr.makeCode(location.origin+'/c/'+msg.promo);
+                })
+            })
+            // qr.makeCode('Rainbow6-RUSSIA')
+        </script>
+    </body>
+</html>
