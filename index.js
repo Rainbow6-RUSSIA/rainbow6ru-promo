@@ -105,27 +105,19 @@ async function getGuilds(token) {
 }
 
 app.get('/', async(req, res) => {
-    res.redirect(`https://discordapp.com/api/oauth2/authorize?client_id=${process.env.DISCORD_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&response_type=code&scope=guilds.join%20guilds%20identify`)
+    res.redirect(`https://discordapp.com/api/oauth2/authorize?client_id=${process.env.DISCORD_ID}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}&response_type=code&scope=identify%20guilds`)
 })
 
 app.get('/auth', async(req, res) => {
     try {
         if (!req.query.code)
             throw new Error('Unathorized')
-        const url = `https://discordapp.com/api/v6/oauth2/token`
-        const answ = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({
-            client_id: process.env.DISCORD_ID,
-            client_secret: process.env.DISCORD_SECRET,
-            grant_type: 'authorization_code',
-            code: req.query.code,
-            redirect_uri: process.env.REDIRECT_URI,
-            scope: 'guilds.join%20guilds%20identify',
-        })});
+        const url = `https://discordapp.com/api/v6/oauth2/token?client_id=${process.env.DISCORD_ID}&client_secret=${process.env.DISCORD_SECRET}&grant_type=authorization_code&code=${req.query.code}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}`
+        const answ = await fetch(url, {method: 'POST'});
         const json = await answ.json();
-        console.log(json)
         res.cookie('token', json.access_token);
         const user = await getUser(json.access_token);
-        if (STAFF.includes(user.id)) {
+        if (!STAFF.includes(user.id)) {
             res.redirect('/a')
             return
         }
@@ -155,7 +147,7 @@ app.get('/c/:code', async(req, res) => {
         console.log('Calling code')
         const user = await getUser(req.cookies.token);
         console.log('Got user')
-        if (STAFF.includes(user.id)) {
+        if (!STAFF.includes(user.id)) {
             console.log('Redirect to a')
             res.redirect('/a/')
             return
@@ -166,8 +158,6 @@ app.get('/c/:code', async(req, res) => {
             res.sendFile(path.join(__dirname + '/pages/promo-err.html'))
             return
         }
-
-        await fetch(`https://discordapp.com/api/v6/guilds/${process.env.TARGET_ID}/members/${id}`, {method: 'PUT', body: {access_token: req.cookies.token}});
 
         const url = `https://discordapp.com/api/v6/guilds/${process.env.TARGET_ID}/members/${id}`;
 
@@ -180,7 +170,6 @@ app.get('/c/:code', async(req, res) => {
             }
         })
         const member = await m.json();
-        console.log(member)
 
         if (member.roles.includes(process.env.TARGET_ROLE)) {
             res.sendFile(path.join(__dirname + '/pages/promo-already.html'));
@@ -203,18 +192,13 @@ app.get('/c/:code', async(req, res) => {
 
 app.get('/a/', async(req, res) => {
     try {
-        const user = await getUser(req.cookies.token);
+        // const user = await getUser(req.cookies.token);
         const guilds = await getGuilds(req.cookies.token);
         if (!guilds.some(g => g.id === process.env.TARGET_ID)) {
-            await fetch(`https://discordapp.com/api/v6/guilds/${process.env.TARGET_ID}/members/${user.id}`, {method: 'PUT', body: {access_token: req.cookies.token}});
-            // res.sendFile(path.join(__dirname + '/pages/invite.html'))
-            // return
+            res.sendFile(path.join(__dirname + '/pages/invite.html'))
+            return
         }
-        if (!STAFF.includes(user.id)) {
-            res.sendFile(path.join(__dirname + '/pages/promo-err.html'));
-        } else {
-            res.sendFile(path.join(__dirname + '/pages/qr.html'));
-        }
+        res.sendFile(path.join(__dirname + '/pages/qr.html'));
     } catch (err) {
         console.log(err.stack);
         res.redirect('/')
