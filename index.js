@@ -111,9 +111,16 @@ app.get('/', async(req, res) => {
 app.get('/auth', async(req, res) => {
     try {
         if (!req.query.code)
-            throw new Error('Unathorized')
-        const url = `https://discordapp.com/api/v6/oauth2/token?client_id=${process.env.DISCORD_ID}&client_secret=${process.env.DISCORD_SECRET}&grant_type=authorization_code&code=${req.query.code}&redirect_uri=${encodeURIComponent(process.env.REDIRECT_URI)}`
-        const answ = await fetch(url, {method: 'POST'});
+        throw new Error('Unathorized')
+        const url = `https://discordapp.com/api/v6/oauth2/token`
+        const answ = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({
+            client_id: process.env.DISCORD_ID,
+            client_secret: process.env.DISCORD_SECRET,
+            grant_type: 'authorization_code',
+            code: req.query.code,
+            redirect_uri: process.env.REDIRECT_URI,
+            scope: 'guilds%20identify',
+        })});
         const json = await answ.json();
         res.cookie('token', json.access_token);
         const user = await getUser(json.access_token);
